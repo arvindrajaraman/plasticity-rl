@@ -1,0 +1,4 @@
+base_config: dqn_basic
+env_name: CartPole-v1
+
+discount: 0.99

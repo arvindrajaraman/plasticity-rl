@@ -1,0 +1,90 @@
+## CUSTOM ##
+data/*
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# C extensions
+*.so
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environment
+venv/
+env/
+ENV/
+
+# Compiled Python files
+*.pyc
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Python-specific artifacts
+*.pyc
+*.pyo
+*.pyd
+
+# Pycache directories
+__pycache__/
+
+# Coverage directory used by tools like coverage.py
+.coverage
+
+# Django settings file
+settings.py
+
+# Flask configuration file
+instance/
+
+# SQLAlchemy files
+*.sqlite
+
+# PyInstaller
+dist/
+build/
+
+# Unit test / coverage reports
+htmlcov/
+.coverage
+
+# Translations
+*.mo
+
+# Logs
+*.log
+
+# IDE-specific files
+.idea/
+.vscode/
+
+# Environment variables
+.env
+
+# Compiled files
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# Temporary files
+*.bak
+*.swp
+*~
+
+# Miscellaneous
+.DS_Store
+Thumbs.db
