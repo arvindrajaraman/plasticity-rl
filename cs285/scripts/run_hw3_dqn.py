@@ -40,7 +40,7 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
 
     assert discrete, "DQN only supports discrete action spaces"
 
-    logdir_prefix = "hw3_dqn_"
+    logdir_prefix = "hw3_dqn_{}_l{}".format(args.regularizer, args.lambda_)
     logdir = (
         logdir_prefix + config["log_name"] + "_" + time.strftime("%d-%m-%Y_%H-%M-%S")
     )
@@ -49,6 +49,9 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
         env.observation_space.shape,
         env.action_space.n,
         weight_plot_freq=args.weight_plot_freq,
+        regularizer=args.regularizer,
+        lambda_=args.lambda_,
+        layer_discount=args.layer_discount,
         logdir=logdir,
         **config["agent_kwargs"],
     )
@@ -101,6 +104,7 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
         
         # TODO(student): Compute action
         action = agent.get_action(observation, epsilon)
+        # print((agent.critic.predict(observation)).shape)
 
         # TODO(student): Step the environment
         next_observation, reward, terminated, info = env.step(action)
@@ -217,6 +221,9 @@ def main():
     parser.add_argument("--num_eval_trajectories", "-neval", type=int, default=10)
     parser.add_argument("--num_render_trajectories", "-nvid", type=int, default=0)
     parser.add_argument("--weight_plot_freq", "-wpq", type=int, default=100)
+    parser.add_argument("--lambda_", "-l", type=float, default=0.01)
+    parser.add_argument("--layer_discount", "-ld", type=float, default=1.0)
+    parser.add_argument("--regularizer", "-r", type=str, default="none")
 
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--no_gpu", "-ngpu", action="store_true")
@@ -226,7 +233,7 @@ def main():
     args = parser.parse_args()
 
     # create directory for logging
-    logdir_prefix = "hw3_dqn_"  # keep for autograder
+    logdir_prefix = "hw3_dqn_{}_l{}".format(args.regularizer, args.lambda_)  # keep for autograder
 
     config = make_config(args.config_file)
     logger = make_logger(logdir_prefix, config)

@@ -6,12 +6,15 @@ import torch
 from torch import nn
 from torch.distributions.categorical import Categorical
 
+from cs285.infrastructure.utils import *
+
 import numpy as np
 
 import matplotlib.pyplot as plt
 
 import cs285.infrastructure.pytorch_util as ptu
-
+from cs285.infrastructure.pytorch_util import DeepFFNN
+from cs285.infrastructure.utils import compute_matrix_rank_summaries
 
 class DQNAgent(nn.Module):
     def __init__(
@@ -29,10 +32,15 @@ class DQNAgent(nn.Module):
         clip_grad_norm: Optional[float] = None,
         weight_plot_freq: int = 100,
         logdir: str = None,
+        regularizer: str = 'none',
+        lambda_: float = 0.01,
+        layer_discount: float = 1.0,
     ):
         super().__init__()
 
-        self.critic = make_critic(observation_shape, num_actions)
+        self.critic = make_critic(observation_shape, num_actions) ## TODO: replace with custom critic.
+        self.critic_weights_t0 = get_weights_by_layer(self.critic)
+
         self.target_critic = make_critic(observation_shape, num_actions)
         self.critic_optimizer = make_optimizer(self.critic.parameters())
         self.lr_scheduler = make_lr_schedule(self.critic_optimizer)
@@ -49,6 +57,9 @@ class DQNAgent(nn.Module):
         self.critic_iter = 0
         self.weight_plot_freq = weight_plot_freq
         self.logdir = logdir
+        self.regularizer = regularizer
+        self.lambda_ = lambda_
+        self.layer_discount = layer_discount
 
         self.update_target_critic()
 
@@ -96,7 +107,19 @@ class DQNAgent(nn.Module):
         # TODO(student): train the critic with the target values
         qa_values = self.critic(obs)
         q_values = torch.gather(qa_values, 1, action.unsqueeze(1)).squeeze(1)  # Compute from the data actions; see torch.gather
+        
+        ## Plasticity-related regularizers ##
         loss = self.critic_loss(q_values, target_values)
+        if self.regularizer == 'none':
+            pass
+        elif self.regularizer == 'weight':
+            for i, (name, param) in enumerate(self.critic.named_parameters()):
+                loss += self.lambda_ * (self.layer_discount ** i) * torch.norm(param, p=2)
+        elif self.regularizer == 'regen':
+            for i, (name, param) in enumerate(self.critic.named_parameters()):
+                loss += self.lambda_ * (self.layer_discount ** i) * torch.norm(param - self.critic_weights_t0[i], p=2)
+        else:
+            raise ValueError(f'Unknown regularizer: {self.regularizer}')
 
         self.critic_optimizer.zero_grad()
         loss.backward()
@@ -105,12 +128,14 @@ class DQNAgent(nn.Module):
         )
         self.critic_optimizer.step()
 
+        ## Plasticity-related code ##
+
+        # Concatenate weights for easy analysis
+        flat_weights = get_weights(self.critic)
+        flat_weights_by_layer = get_weights_by_layer(self.critic)
+
+        # Plot weight distribution
         if self.critic_iter % self.weight_plot_freq == 0:
-            flat_weights = []
-            for name, param in self.critic.named_parameters():
-                if 'weight' in name:
-                    flat_weights.append(param.data.cpu().numpy().flatten())
-            flat_weights = np.concatenate(flat_weights)
             plt.figure(figsize=(3, 3))
             plt.hist(flat_weights, bins=100, color='green', range=(-3, 3), density=True)
             plt.text(0.5, 0.5, f'iter={self.critic_iter}')
@@ -118,14 +143,39 @@ class DQNAgent(nn.Module):
             if not (os.path.exists(dir_prefix)):
                 os.makedirs(dir_prefix)
             plt.savefig(dir_prefix + f'dist_{self.critic_iter}.png')
-        self.critic_iter += 1
 
-        return {
+        info = {
             "critic_loss": loss.item(),
             "q_values": q_values.mean().item(),
             "target_values": target_values.mean().item(),
             "grad_norm": grad_norm.item(),
         }
+
+        # Calculate weight magnitude
+        weight_magnitude = np.linalg.norm(flat_weights)
+        info["critic_weight_mag"] = weight_magnitude.item()
+
+        for i, weights in enumerate(flat_weights_by_layer):
+            layer_weight_magnitude = np.linalg.norm(weights)
+            info["critic_weight_mag_layer_{}".format(i)] = layer_weight_magnitude.item()
+
+        # Calculate effective rank
+        # Use utils compute_effective_rank and predict function
+        n_layers = len(flat_weights_by_layer)
+        matrix = self.critic(obs)[1]
+        
+        # for layer_idx in range(n_layers):
+            # rank = compute_effective_rank(matrix[layer_idx])
+            # info["critic_effective_rank_layer_{}".format(layer_idx)] = rank
+
+        # # Calculate number of dead relu units
+        # _, activations = self.critic.predict(obs)
+        # print('DEBUG:', activations)
+        # raise NotImplementedError
+
+        self.critic_iter += 1
+        return info
+
 
     def update_target_critic(self):
         self.target_critic.load_state_dict(self.critic.state_dict())

@@ -12,7 +12,8 @@ from cs285.env_configs.schedule import (
     PiecewiseSchedule,
     ConstantSchedule,
 )
-import cs285.infrastructure.pytorch_util as ptu
+import cs285.infrastructure.pytorch_util as ptu 
+from cs285.infrastructure.pytorch_util import DeepFFNN
 
 def basic_dqn_config(
     env_name: str,
@@ -30,12 +31,14 @@ def basic_dqn_config(
     **kwargs
 ):
     def make_critic(observation_shape: Tuple[int, ...], num_actions: int) -> nn.Module:
-        return ptu.build_mlp(
-            input_size=np.prod(observation_shape),
-            output_size=num_actions,
-            n_layers=num_layers,
-            size=hidden_size,
-        )
+        # return ptu.build_mlp(
+        #     input_size=np.prod(observation_shape),
+        #     output_size=num_actions,
+        #     n_layers=num_layers,
+        #     size=hidden_size,
+        # )
+        net = DeepFFNN(input_size=np.prod(observation_shape), output_size=num_actions, n_layers=num_layers, size=hidden_size)
+        return net
 
     def make_optimizer(params: torch.nn.ParameterList) -> torch.optim.Optimizer:
         return torch.optim.Adam(params, lr=learning_rate)
