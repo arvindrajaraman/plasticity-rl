@@ -2,7 +2,7 @@ import time
 import argparse
 
 import sys
-sys.path.append('/Users/arvind/Documents/GitHub/plasticity-rl')
+sys.path.append('/Users/veronateo/cs285/plasticity-rl')
 from cs285.agents.dqn_agent import DQNAgent
 import cs285.env_configs
 
@@ -40,7 +40,7 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
 
     assert discrete, "DQN only supports discrete action spaces"
 
-    logdir_prefix = "hw3_dqn_{}_l{}".format(args.regularizer, args.lambda_)
+    logdir_prefix = "hw3_dqn_"
     logdir = (
         logdir_prefix + config["log_name"] + "_" + time.strftime("%d-%m-%Y_%H-%M-%S")
     )
@@ -99,13 +99,14 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
 
     reset_env_training()
 
+
     for step in tqdm.trange(config["total_steps"], dynamic_ncols=True):
         epsilon = exploration_schedule.value(step)
         
         # TODO(student): Compute action
         action = agent.get_action(observation, epsilon)
-        # print((agent.critic.predict(observation)).shape)
-
+        #print(agent.critic.predict(ptu.from_numpy(observation))[0].shape)
+        # 
         # TODO(student): Step the environment
         next_observation, reward, terminated, info = env.step(action)
         next_observation = np.asarray(next_observation)
@@ -163,6 +164,18 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
                 done=batch["dones"],
                 step=step
             )
+
+            ## generate feature matrix from minibatch of observations
+            activations = agent.critic.predict(batch["observations"])[1]
+            #penultimate_activations = activations[-1]
+            #print('EFFECTIVE RANK OF PENULTIMATE ACTIVATIONS')
+            #print(penultimate_activations.shape)
+
+            ## get pennultimate activations' effective rank
+            #approximate_ranks[new_idx][rep_layer_idx], approximate_ranks_abs[new_idx][rep_layer_idx] = \
+            _, effective_rank, _, _ = utils.compute_matrix_rank_summaries(m=activations[-1].detach(), use_scipy=True)
+            logger.log_scalar(effective_rank, "batched_128_effective_rank", step)
+            #print(utils.compute_matrix_rank_summaries(m=activations[-1].detach(), use_scipy=True))
 
             # Logging code
             update_info["epsilon"] = epsilon
@@ -233,7 +246,7 @@ def main():
     args = parser.parse_args()
 
     # create directory for logging
-    logdir_prefix = "hw3_dqn_{}_l{}".format(args.regularizer, args.lambda_)  # keep for autograder
+    logdir_prefix = "hw3_dqn_"  # keep for autograder
 
     config = make_config(args.config_file)
     logger = make_logger(logdir_prefix, config)
