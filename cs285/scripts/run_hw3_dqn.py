@@ -166,15 +166,41 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
             )
 
             ## generate feature matrix from minibatch of observations
-            activations = agent.critic.predict(batch["observations"])[1]
+            output, activations = agent.critic.predict(batch["observations"])
             #penultimate_activations = activations[-1]
             #print('EFFECTIVE RANK OF PENULTIMATE ACTIVATIONS')
             #print(penultimate_activations.shape)
 
-            ## get pennultimate activations' effective rank
+            ## get penultimate activations' effective rank
             #approximate_ranks[new_idx][rep_layer_idx], approximate_ranks_abs[new_idx][rep_layer_idx] = \
-            _, effective_rank, _, _ = utils.compute_matrix_rank_summaries(m=activations[-1].detach(), use_scipy=True)
-            logger.log_scalar(effective_rank, "batched_128_effective_rank", step)
+            effective_rank_by_layer = []
+            dead_neurons_by_layer = []
+
+            for i in range(len(activations)):
+                activation = activations[i].detach()
+                _, effective_rank, _, _ = utils.compute_matrix_rank_summaries(m=activation, use_scipy=True)
+                dead_neurons = torch.sum(activation == 0, dim=1).float().mean().item()
+                effective_rank_by_layer.append(effective_rank)
+                dead_neurons_by_layer.append(dead_neurons)
+                update_info["critic_effective_rank_layer_{}".format(i)] = effective_rank.item()
+                update_info["critic_dead_neurons_layer_{}".format(i)] = dead_neurons
+            
+            output = output.detach()
+            _, effective_rank, _, _ = utils.compute_matrix_rank_summaries(m=output, use_scipy=True)
+            dead_neurons = torch.sum(output == 0, dim=1).float().mean().item()
+            effective_rank_by_layer.append(effective_rank)
+            dead_neurons_by_layer.append(dead_neurons)
+            update_info["critic_effective_rank_output_layer"] = effective_rank.item()
+            update_info["critic_dead_neurons_output_layer"] = dead_neurons
+
+            #_, effective_rank, _, _ = utils.compute_matrix_rank_summaries(m=activations[-1].detach(), use_scipy=True)
+            # print(activations[-1].shape)
+
+            ## for activations[-1], which is 128 x 64, return a 128x1 vector of the number of dead neuros
+            ## Basically count zero's row-wise
+            #dead_neurons = torch.sum(activations[-1] == 0, dim=1).float().mean().item()
+            #logger.log_scalar(effective_rank, "batched_128_effective_rank", step)
+            #logger.log_scalar(dead_neurons, "batched_128_dead_neurons", step)
             #print(utils.compute_matrix_rank_summaries(m=activations[-1].detach(), use_scipy=True))
 
             # Logging code
