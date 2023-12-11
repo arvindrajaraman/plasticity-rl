@@ -161,8 +161,8 @@ class DQNAgent(nn.Module):
 
         # Calculate effective rank
         # Use utils compute_effective_rank and predict function
-        n_layers = len(flat_weights_by_layer)
-        matrix = self.critic(obs)[1]
+        # n_layers = len(flat_weights_by_layer)
+        # matrix = self.critic(obs)[1]
         
         # for layer_idx in range(n_layers):
             # rank = compute_effective_rank(matrix[layer_idx])
