@@ -2,7 +2,7 @@ import time
 import argparse
 
 import sys
-sys.path.append('/Users/veronateo/cs285/plasticity-rl')
+sys.path.append('/Users/arvind/Documents/GitHub/plasticity-rl')
 from cs285.agents.dqn_agent import DQNAgent
 import cs285.env_configs
 
@@ -40,7 +40,7 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
 
     assert discrete, "DQN only supports discrete action spaces"
 
-    logdir_prefix = "hw3_dqn_"
+    logdir_prefix = "hw3_dqn_{}_la{}_d{}".format(args.regularizer, args.lambda_, args.layer_discount)
     logdir = (
         logdir_prefix + config["log_name"] + "_" + time.strftime("%d-%m-%Y_%H-%M-%S")
     )
@@ -246,7 +246,7 @@ def main():
     args = parser.parse_args()
 
     # create directory for logging
-    logdir_prefix = "hw3_dqn_"  # keep for autograder
+    logdir_prefix = "hw3_dqn_{}_la{}_d{}".format(args.regularizer, args.lambda_, args.layer_discount)  # keep for autograder
 
     config = make_config(args.config_file)
     logger = make_logger(logdir_prefix, config)
