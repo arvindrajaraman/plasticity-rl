@@ -40,7 +40,7 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
 
     assert discrete, "DQN only supports discrete action spaces"
 
-    logdir_prefix = "hw3_dqn_{}_la{}_d{}".format(args.regularizer, args.lambda_, args.layer_discount)
+    logdir_prefix = "hw3_dqn_{}_la{}_d{}_s{}_uwt{}".format(args.regularizer, args.lambda_, args.layer_discount, args.seed, args.update_with_target)
     logdir = (
         logdir_prefix + config["log_name"] + "_" + time.strftime("%d-%m-%Y_%H-%M-%S")
     )
@@ -276,7 +276,7 @@ def main():
     args = parser.parse_args()
 
     # create directory for logging
-    logdir_prefix = "hw3_dqn_{}_la{}_d{}".format(args.regularizer, args.lambda_, args.layer_discount)  # keep for autograder
+    logdir_prefix = "hw3_dqn_{}_la{}_d{}_s{}_uwt{}".format(args.regularizer, args.lambda_, args.layer_discount, args.seed, args.update_with_target)  # keep for autograder
 
     config = make_config(args.config_file)
     logger = make_logger(logdir_prefix, config)
