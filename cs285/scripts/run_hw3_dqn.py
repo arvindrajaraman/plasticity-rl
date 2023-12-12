@@ -55,6 +55,8 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
         logdir=logdir,
         **config["agent_kwargs"],
     )
+    
+    agent = agent.to(ptu.device)
 
     # simulation timestep, will be used for video saving
     if "model" in dir(env):
