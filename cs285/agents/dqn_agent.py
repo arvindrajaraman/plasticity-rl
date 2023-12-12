@@ -14,7 +14,6 @@ import matplotlib.pyplot as plt
 
 import cs285.infrastructure.pytorch_util as ptu
 from cs285.infrastructure.pytorch_util import DeepFFNN
-from cs285.infrastructure.utils import compute_matrix_rank_summaries
 
 class DQNAgent(nn.Module):
     def __init__(
@@ -111,13 +110,14 @@ class DQNAgent(nn.Module):
         q_values = torch.gather(qa_values, 1, action.unsqueeze(1)).squeeze(1)  # Compute from the data actions; see torch.gather
         
         ## Plasticity-related regularizers ##
-        loss = self.critic_loss(q_values, target_values)
+        loss = self.critic_loss(q_values, target_values) 
+        ## loss = critic_loss + l2_reg + regenerative_reg + singular_loss 
         if self.regularizer == 'none':
             pass
-        elif self.regularizer == 'weight':
+        elif self.regularizer == 'weight_mag':
             for i, (name, param) in enumerate(self.critic.named_parameters()):
                 loss += self.lambda_ * (self.layer_discount ** i) * torch.norm(param, p=2)
-        elif self.regularizer == 'regen':
+        elif self.regularizer == 'regenerative_reg':
             for i, (name, param) in enumerate(self.critic.named_parameters()):
                 loss += self.lambda_ * (self.layer_discount ** i) * torch.norm(param - self.critic_weights_t0[i], p=2)
         else:
@@ -163,17 +163,12 @@ class DQNAgent(nn.Module):
 
         # Calculate effective rank
         # Use utils compute_effective_rank and predict function
-        n_layers = len(flat_weights_by_layer)
-        matrix = self.critic(obs)[1]
+        # n_layers = len(flat_weights_by_layer)
+        # matrix = self.critic(obs)[1]
         
         # for layer_idx in range(n_layers):
             # rank = compute_effective_rank(matrix[layer_idx])
             # info["critic_effective_rank_layer_{}".format(layer_idx)] = rank
-
-        # # Calculate number of dead relu units
-        # _, activations = self.critic.predict(obs)
-        # print('DEBUG:', activations)
-        # raise NotImplementedError
 
         self.critic_iter += 1
         return info
