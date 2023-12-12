@@ -174,5 +174,4 @@ class DeepFFNN(nn.Module):
             activations.append(out)
 
         out = self.out_layer.forward(x=out)
-        # print(activations)
         return out, activations

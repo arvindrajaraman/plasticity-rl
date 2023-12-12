@@ -34,11 +34,12 @@ class DQNAgent(nn.Module):
         regularizer: str = 'none',
         lambda_: float = 0.01,
         layer_discount: float = 1.0,
+        update_with_target: bool = False
     ):
         super().__init__()
 
         self.critic = make_critic(observation_shape, num_actions) ## TODO: replace with custom critic.
-        self.critic_weights_t0 = get_weights_by_layer(self.critic)
+        self.critic_weights_t0 = get_weights_by_layer_tensor(self.critic)
 
         self.target_critic = make_critic(observation_shape, num_actions)
         self.critic_optimizer = make_optimizer(self.critic.parameters())
@@ -59,6 +60,7 @@ class DQNAgent(nn.Module):
         self.regularizer = regularizer
         self.lambda_ = lambda_
         self.layer_discount = layer_discount
+        self.update_with_target = update_with_target
 
         self.update_target_critic()
 
@@ -86,6 +88,7 @@ class DQNAgent(nn.Module):
         reward: torch.Tensor,
         next_obs: torch.Tensor,
         done: torch.Tensor,
+        target_critic_updating: bool,
     ) -> dict:
         """Update the DQN critic, and return stats for logging."""
         (batch_size,) = reward.shape
@@ -106,20 +109,39 @@ class DQNAgent(nn.Module):
         # TODO(student): train the critic with the target values
         qa_values = self.critic(obs)
         q_values = torch.gather(qa_values, 1, action.unsqueeze(1)).squeeze(1)  # Compute from the data actions; see torch.gather
+
+        output, activations = self.critic.predict(obs)
+        #penultimate_activations = activations[-1]
+        #print('EFFECTIVE RANK OF PENULTIMATE ACTIVATIONS')
+        #print(penultimate_activations.shape)
+
+        ## get penultimate activations' effective rank
+        #approximate_ranks[new_idx][rep_layer_idx], approximate_ranks_abs[new_idx][rep_layer_idx] = \
+
+        penultimate_activations = activations[-1]
+
+        ## compute singular values of penultimate layer feature matrix, penultimate_activations
+        u, s, v = torch.svd(penultimate_activations)
         
         ## Plasticity-related regularizers ##
-        loss = self.critic_loss(q_values, target_values) 
-        ## loss = critic_loss + l2_reg + regenerative_reg + singular_loss 
-        if self.regularizer == 'none':
-            pass
-        elif self.regularizer == 'weight_mag':
-            for i, (name, param) in enumerate(self.critic.named_parameters()):
-                loss += self.lambda_ * (self.layer_discount ** i) * torch.norm(param, p=2)
-        elif self.regularizer == 'regenerative_reg':
-            for i, (name, param) in enumerate(self.critic.named_parameters()):
-                loss += self.lambda_ * (self.layer_discount ** i) * torch.norm(param - self.critic_weights_t0[i], p=2)
-        else:
-            raise ValueError(f'Unknown regularizer: {self.regularizer}')
+        loss = self.critic_loss(q_values, target_values)
+        if target_critic_updating or not self.update_with_target:
+            if self.regularizer == 'none':
+                pass
+            elif self.regularizer == 'weight_mag':
+                for i, (name, param) in enumerate(self.critic.named_parameters()):
+                    if 'weight' in name:
+                        loss += self.lambda_ * (self.layer_discount ** i) * torch.norm(param, p=2)
+            elif self.regularizer == 'regenerative_reg':
+                weights = [param for name, param in self.critic.named_parameters() if 'weight' in name]
+                for i, param in enumerate(weights):
+                    loss += self.lambda_ * (self.layer_discount ** i) * torch.norm(param - self.critic_weights_t0[i], p=2)
+            elif self.regularizer == 'singular_loss':
+                ## singular loss = max_singular_value(penultimate_activations)^2 - min_singular_value(penultimate_activations)^2
+                loss += self.lambda_ * (torch.max(s) ** 2 - torch.min(s) ** 2)
+            else:
+                raise ValueError(f'Unknown regularizer: {self.regularizer}')
+
 
         self.critic_optimizer.zero_grad()
         loss.backward()
@@ -149,6 +171,8 @@ class DQNAgent(nn.Module):
             "q_values": q_values.mean().item(),
             "target_values": target_values.mean().item(),
             "grad_norm": grad_norm.item(),
+            "target_critic_updating": 1 if target_critic_updating else 0,
+            "singular_val_range": (torch.max(s) ** 2 - torch.min(s) ** 2).item(),
         }
 
         # Calculate weight magnitude
@@ -188,9 +212,10 @@ class DQNAgent(nn.Module):
         Update the DQN agent, including both the critic and target.
         """
         # TODO(student): update the critic, and the target if needed
-        critic_stats = self.update_critic(obs, action, reward, next_obs, done)
+        whether_to_update = step % self.target_update_period == 0
+        critic_stats = self.update_critic(obs, action, reward, next_obs, done, whether_to_update)
 
-        if step % self.target_update_period == 0:
+        if whether_to_update:
             self.update_target_critic()
         
         return critic_stats

@@ -183,6 +183,13 @@ def get_weights_by_layer(model):
             flat_weights_by_layer.append(param.data.cpu().numpy().flatten())
     return flat_weights_by_layer
 
+def get_weights_by_layer_tensor(model):
+    flat_weights_by_layer = []
+    for name, param in model.named_parameters():
+        if 'weight' in name:
+            flat_weights_by_layer.append(param.data.detach())
+    return flat_weights_by_layer
+
 
 #### Plasticity Loss Metrics
 def compute_matrix_rank_summaries(m: torch.Tensor, prop=0.99, use_scipy=False):

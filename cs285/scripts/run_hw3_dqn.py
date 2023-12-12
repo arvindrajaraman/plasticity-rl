@@ -53,6 +53,7 @@ def run_training_loop(config: dict, logger: Logger, args: argparse.Namespace):
         lambda_=args.lambda_,
         layer_discount=args.layer_discount,
         logdir=logdir,
+        update_with_target=args.update_with_target,
         **config["agent_kwargs"],
     )
 
@@ -262,7 +263,8 @@ def main():
     parser.add_argument("--weight_plot_freq", "-wpq", type=int, default=100)
     parser.add_argument("--lambda_", "-l", type=float, default=0.01)
     parser.add_argument("--layer_discount", "-ld", type=float, default=1.0)
-    parser.add_argument("--regularizer", "-r", type=str, default="none")
+    parser.add_argument("--regularizer", "-r", type=str, default="none") # current options: "none", "weight_mag", "regenerative_reg", "singular_loss"
+    parser.add_argument("--update_with_target", type=bool, default=False, help="Whether regularization should only occur with the target critic update (true) or for every iteration (false)")
 
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--no_gpu", "-ngpu", action="store_true")
