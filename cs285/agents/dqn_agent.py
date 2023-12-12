@@ -44,6 +44,7 @@ class DQNAgent(nn.Module):
         self.target_critic = make_critic(observation_shape, num_actions)
         self.critic_optimizer = make_optimizer(self.critic.parameters())
         self.lr_scheduler = make_lr_schedule(self.critic_optimizer)
+        self.device = ptu.device
 
         self.observation_shape = observation_shape
         self.num_actions = num_actions
@@ -69,6 +70,7 @@ class DQNAgent(nn.Module):
         Used for evaluation.
         """
         observation = ptu.from_numpy(np.asarray(observation))[None]
+        observation = observation.to(device=self.device)
 
         # TODO(student): get the action from the critic using an epsilon-greedy strategy    
         qa_values = self.critic(observation)
@@ -212,9 +214,11 @@ class DQNAgent(nn.Module):
         Update the DQN agent, including both the critic and target.
         """
         # TODO(student): update the critic, and the target if needed
-        whether_to_update = step % self.target_update_period == 0
-        critic_stats = self.update_critic(obs, action, reward, next_obs, done, whether_to_update)
 
+        whether_to_update = step % self.target_update_period == 0
+        critic_stats = self.update_critic(obs.to(device=self.device), action.to(device = self.device), reward.to(device= self.device), \
+                                          next_obs.to(device= self.device), done.to(device = self.device), whether_to_update)
+        
         if whether_to_update:
             self.update_target_critic()
         
