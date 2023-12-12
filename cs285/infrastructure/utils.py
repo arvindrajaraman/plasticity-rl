@@ -187,7 +187,7 @@ def get_weights_by_layer_tensor(model):
     flat_weights_by_layer = []
     for name, param in model.named_parameters():
         if 'weight' in name:
-            flat_weights_by_layer.append(param.data.detach())
+            flat_weights_by_layer.append(param.data.detach().to(ptu.device))
     return flat_weights_by_layer
 
 
