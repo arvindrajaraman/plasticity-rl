@@ -136,6 +136,8 @@ class DQNAgent(nn.Module):
                         loss += self.lambda_ * (self.layer_discount ** i) * torch.norm(param, p=2)
             elif self.regularizer == 'regenerative_reg':
                 weights = [param for name, param in self.critic.named_parameters() if 'weight' in name]
+                print(weights[0].device, self.critic_weights_t0[0].device)
+                raise NotImplementedError
                 for i, param in enumerate(weights):
                     loss += self.lambda_ * (self.layer_discount ** i) * torch.norm(param - self.critic_weights_t0[i], p=2)
             elif self.regularizer == 'singular_loss':
