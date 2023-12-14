@@ -1,5 +1,5 @@
 base_config: dqn_basic
-env_name: BipedalWalker-v3
+env_name: Pendulum-v1
 
 target_update_period: 1000
 batch_size: 512
