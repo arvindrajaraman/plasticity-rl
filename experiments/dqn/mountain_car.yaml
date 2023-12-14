@@ -1,5 +1,5 @@
 base_config: dqn_basic
-env_name: Pendulum-v1
+env_name: MountainCar-v0
 
 target_update_period: 1000
 batch_size: 512
