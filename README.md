@@ -1,7 +1,7 @@
 # Investigating Plasticity in RL
 By: Verona Teo*, Arvind Rajaraman*, and Seyone Chithrananda*
 
-* Equal contribution and co-authorship
+\* Equal contribution and co-authorship
 
 This repo explores the problem of plasticity loss in deep reinforcement learning. **Plasticity loss** is the phenomenon of neural networks losing their ability to classify/regress on new data, when trained on old data until convergence. This term is derived from neuroplasticity loss, which is the loss of ability of human brains adapting to new experiences over time (which explains why it's harder for adults to learn a language as compared to children).
 
