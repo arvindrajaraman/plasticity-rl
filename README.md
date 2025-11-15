@@ -18,7 +18,9 @@ This repo explores the problem of plasticity loss in deep reinforcement learning
 </table>
 
 
-Specifically, we investigate the loss of plasticity in deep Q-networks and analyze how the weights, rank, and activation neurons change over time in several experiments. We explore:
+Specifically, we investigate the loss of plasticity in deep Q-networks and analyze how the weights, rank, and activation neurons change over time in several experiments. As seen above, regularizing singular values increases the effective rank of the neural network's weights (diagram on the right), which makes it easier for RL algorithms to perform longer-horizon tasks (diagram on the left).
+
+Our work also explores:
 - Successive regularization for later layers in a neural network
 - Regularizing singular values to create desirable convergence properties
 - Selectively regularizing only during certain time steps
